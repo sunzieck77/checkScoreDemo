@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHECK SCORE</title>
+    <link rel="stylesheet" href="style2.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-circle"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <form id="studentForm">
+            <div class="form-title"></div>
+            <div class="std-name">Student Name</div>
+            <div class="std-score">Score</div>
+            <div class="std-status">Status</div>
+            <input type="text" placeholder="Your student ID" id="stdID">
+            <div class="btn-frame">
+                <button id="submitID" type="submit"> ตรวจสอบ </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+   // Function to read Excel file and fetch student data
+   document.getElementById('studentForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    
+    // Get the entered student ID and trim whitespaces
+    const studentID = document.getElementById('stdID').value.trim();
+    if (!studentID) {
+        return;
+    }
+
+    // Load the Excel file using FileReader API
+    fetch('Book1.xlsx')
+        .then(response => response.arrayBuffer())
+        .then(data => {
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+            // Log the entire JSON data from the sheet
+            <!-- console.log("Excel Data:", jsonData); -->
+
+            // Loop through the rows to find the matching student ID (Assume it's in column B)
+            let studentFound = false;
+            for (let i = 1; i < jsonData.length; i++) { // Starts from row 3 (index 2)
+                const row = jsonData[i];
+                const studentIDInExcel = row[0]?.toString().trim(); // Column B (index 1) and convert to string
+                console.log(studentIDInExcel);
+                // Compare input student ID with the one from Excel (ensuring both are strings)
+                if (studentIDInExcel === studentID) {
+                    // Student ID matched, get the name and score
+                    const studentName = row[1]?.toString().trim() || "Not Found"; // Column C (index 2)
+                    const studentScore = row[2]?.toString().trim() || "N/A"; // Column D (index 3)
+                    
+                    // Update the DOM with student name and score
+                    document.querySelector('.std-name').innerText = studentName;
+                    document.querySelector('.std-score').innerText = studentScore+"/50";
+                    if (row[2]>=25) {
+                        document.querySelector('.std-score').style.color = "#4fa74f"
+                        document.querySelector('.std-status').innerText = "ผ่าน";
+                    }
+                    else {
+                        document.querySelector('.std-score').style.color = "#a74f68"
+                        document.querySelector('.std-status').innerText = "ไม่ผ่าน";
+                    }
+                    studentFound = true;
+                    break;
+                }
+            }
+
+            if (!studentFound) {
+                document.querySelector('.std-name').innerText = "Not Found";
+                document.querySelector('.std-score').innerText = "N/A";
+            }
+        })
+        .catch(error => console.error("Error loading Excel file:", error));
+});
+
+        // Hide loading screen after page load
+        window.onload = function() {
+            const loadingScreen = document.getElementById('loading-screen');
+            loadingScreen.style.display = 'none'; 
+        };
+    </script>
+    
+</body>
+</html>
